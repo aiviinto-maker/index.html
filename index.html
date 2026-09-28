@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+  />
+
+  <title>Solana Token Creator</title>
+
+  <style>
+    :root {
+      --background: #090b13;
+      --card: #151927;
+      --card-light: #1e2437;
+      --text: #f5f7ff;
+      --muted: #a9b0c5;
+      --purple: #9945ff;
+      --green: #19d39b;
+      --red: #ff6678;
+      --border: #30384f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top right, #26114c 0, transparent 35%),
+        var(--background);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin: 20px 0 24px;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #9945ff, #14f195);
+      color: #080a10;
+      font-size: 30px;
+      font-weight: bold;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .card {
+      background: rgba(21, 25, 39, 0.96);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-title {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .network {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px;
+      border: 1px solid rgba(25, 211, 155, 0.35);
+      background: rgba(25, 211, 155, 0.08);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .network-name {
+      color: var(--green);
+      font-weight: bold;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 10px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .wallet-address {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--card-light);
+      color: #d9dded;
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-all;
+      display: none;
+    }
+
+    .balance {
+      display: none;
+      margin-top: 10px;
+      color: var(--green);
+      font-weight: bold;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 11px;
+      padding: 14px 16px;
+      color: white;
+      background: linear-gradient(135deg, #9945ff, #7132c7);
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.secondary {
+      margin-top: 10px;
+      background: #2a3044;
+    }
+
+    button.danger {
+      margin-top: 10px;
+      background: #592633;
+      color: #ffb8c1;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .warning {
+      padding: 14px;
+      border-radius: 11px;
+      background: rgba(255, 179, 71, 0.1);
+      border: 1px solid rgba(255, 179, 71, 0.3);
+      color: #ffd28b;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .success {
+      color: var(--green);
+    }
+
+    .error {
+      color: var(--red);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 24px 0 10px;
+    }
+
+    a {
+      color: #b98cff;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <header class="header">
+      <div class="logo">S</div>
+      <h1>Solana Token Creator</h1>
+      <p class="subtitle">
+        Create SPL tokens using Phantom wallet.
+      </p>
+    </header>
+
+    <section class="card">
+      <div class="network">
+        <span>Current network</span>
+        <span class="network-name">Solana Devnet</span>
+      </div>
+
+      <h2 class="card-title">Connect your wallet</h2>
+
+      <button id="connectButton">
+        Connect Phantom
+      </button>
+
+      <button id="disconnectButton" class="danger hidden">
+        Disconnect Wallet
+      </button>
+
+      <div id="status" class="status">
+        Wallet not connected.
+      </div>
+
+      <div id="walletAddress" class="wallet-address"></div>
+      <div id="walletBalance" class="balance"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Next step</h2>
+
+      <p class="status">
+        After the wallet connection is working, we will add the token form
+        for name, symbol, decimals, supply and metadata.
+      </p>
+
+      <button id="tokenButton" class="secondary" disabled>
+        Create Token
+      </button>
+    </section>
+
+    <section class="card">
+      <div class="warning">
+        <strong>Security warning:</strong><br />
+        Never enter your seed phrase or private key on this website.
+        Phantom must handle wallet approval and transaction signing.
+      </div>
+    </section>
+
+    <footer class="footer">
+      Devnet testing only. Do not use real funds yet.
+    </footer>
+  </main>
+
+  <script type="module">
+    import {
+      Connection,
+      PublicKey,
+      LAMPORTS_PER_SOL
+    } from "https://esm.sh/@solana/web3.js@1.98.4";
+
+    const DEVNET_RPC =
+      "https://api.devnet.solana.com";
+
+    const connection = new Connection(DEVNET_RPC, "confirmed");
+
+    const connectButton = document.getElementById("connectButton");
+    const disconnectButton = document.getElementById("disconnectButton");
+    const tokenButton = document.getElementById("tokenButton");
+    const statusElement = document.getElementById("status");
+    const walletAddressElement = document.getElementById("walletAddress");
+    const walletBalanceElement = document.getElementById("walletBalance");
+
+    let walletProvider = null;
+    let connectedPublicKey = null;
+
+    function getPhantomProvider() {
+      if (window.phantom && window.phantom.solana) {
+        return window.phantom.solana;
+      }
+
+      if (window.solana && window.solana.isPhantom) {
+        return window.solana;
+      }
+
+      return null;
+    }
+
+    function shortenAddress(address) {
+      return address.slice(0, 6) + "..." + address.slice(-6);
+    }
+
+    function setStatus(message, type = "") {
+      statusElement.textContent = message;
+      statusElement.className = "status";
+
+      if (type === "success") {
+        statusElement.classList.add("success");
+      }
+
+      if (type === "error") {
+        statusElement.classList.add("error");
+      }
+    }
+
+    async function updateBalance(publicKey) {
+      try {
+        const lamports = await connection.getBalance(publicKey);
+        const sol = lamports / LAMPORTS_PER_SOL;
+
+        walletBalanceElement.textContent =
+          "Devnet balance: " + sol.toFixed(6) + " SOL";
+
+        walletBalanceElement.style.display = "block";
+      } catch (error) {
+        walletBalanceElement.textContent =
+          "Unable to load Devnet balance.";
+        walletBalanceElement.style.display = "block";
+      }
+    }
+
+    async function connectWallet() {
+      walletProvider = getPhantomProvider();
+
+      if (!walletProvider) {
+        setStatus(
+          "Phantom was not detected. Open this website inside the Phantom app browser or install Phantom.",
+          "error"
+        );
+        return;
+      }
+
+      try {
+        const response = await walletProvider.connect();
+        connectedPublicKey = response.publicKey;
+
+        const address = connectedPublicKey.toString();
+
+        walletAddressElement.textContent =
+          "Wallet: " + address;
+
+        walletAddressElement.style.display = "block";
+
+        connectButton.classList.add("hidden");
+        disconnectButton.classList.remove("hidden");
+        tokenButton.disabled = false;
+
+        setStatus(
+          "Wallet connected: " + shortenAddress(address),
+          "success"
+        );
+
+        await updateBalance(connectedPublicKey);
+      } catch (error) {
+        setStatus(
+          "Wallet connection was cancelled or failed.",
+          "error"
+        );
+      }
+    }
+
+    async function disconnectWallet() {
+      try {
+        if (walletProvider) {
+          await walletProvider.disconnect();
+        }
+      } catch (error) {
+        console.warn("Disconnect error:", error);
+      }
+
+      walletProvider = null;
+      connectedPublicKey = null;
+
+      connectButton.classList.remove("hidden");
+      disconnectButton.classList.add("hidden");
+      tokenButton.disabled = true;
+
+      walletAddressElement.textContent = "";
+      walletAddressElement.style.display = "none";
+
+      walletBalanceElement.textContent = "";
+      walletBalanceElement.style.display = "none";
+
+      setStatus("Wallet disconnected.");
+    }
+
+    connectButton.addEventListener("click", connectWallet);
+    disconnectButton.addEventListener("click", disconnectWallet);
+
+    tokenButton.addEventListener("click", function () {
+      if (!connectedPublicKey) {
+        setStatus("Connect Phantom first.", "error");
+        return;
+      }
+
+      setStatus(
+        "Token creation will be added in the next step.",
+        "success"
+      );
+    });
+
+    window.addEventListener("load", async function () {
+      walletProvider = getPhantomProvider();
+
+      if (!walletProvider) {
+        setStatus(
+          "Open this page inside Phantom or install the Phantom wallet."
+        );
+        return;
+      }
+
+      try {
+        if (walletProvider.isConnected && walletProvider.publicKey) {
+          connectedPublicKey = walletProvider.publicKey;
+
+          const address = connectedPublicKey.toString();
+
+          walletAddressElement.textContent =
+            "Wallet: " + address;
+
+          walletAddressElement.style.display = "block";
+
+          connectButton.classList.add("hidden");
+          disconnectButton.classList.remove("hidden");
+          tokenButton.disabled = false;
+
+          setStatus(
+            "Wallet already connected: " + shortenAddress(address),
+            "success"
+          );
+
+          await updateBalance(connectedPublicKey);
+        }
+      } catch (error) {
+        console.warn("Automatic wallet detection failed:", error);
+      }
+    });
+
+    if (walletProvider) {
+      walletProvider.on("disconnect", disconnectWallet);
+    }
+  </script>
+</body>
+</html>
