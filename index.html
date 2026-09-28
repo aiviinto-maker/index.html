@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Solana Token Creator</title>
+  <title>Solana SPL Token Creator</title>
 
   <style>
     * {
@@ -21,11 +20,12 @@
     }
 
     .container {
+      width: 100%;
       max-width: 560px;
       margin: auto;
     }
 
-    .header {
+    header {
       text-align: center;
       margin: 20px 0;
     }
@@ -33,9 +33,9 @@
     .logo {
       width: 64px;
       height: 64px;
-      margin: auto auto 14px;
       display: grid;
       place-items: center;
+      margin: 0 auto 14px;
       border-radius: 18px;
       background: linear-gradient(135deg, #9945ff, #14f195);
       color: #080a10;
@@ -56,16 +56,16 @@
     .subtitle,
     .status {
       color: #a9b0c5;
-      line-height: 1.5;
       font-size: 14px;
+      line-height: 1.5;
     }
 
     .card {
-      background: #151927;
-      border: 1px solid #30384f;
-      border-radius: 18px;
       padding: 20px;
       margin-bottom: 16px;
+      border: 1px solid #30384f;
+      border-radius: 18px;
+      background: #151927;
     }
 
     .network {
@@ -104,8 +104,8 @@
 
     button {
       width: 100%;
-      margin-top: 14px;
       padding: 14px;
+      margin-top: 14px;
       border: 0;
       border-radius: 11px;
       background: linear-gradient(135deg, #9945ff, #7132c7);
@@ -127,13 +127,13 @@
     .wallet-box,
     .result-box {
       display: none;
-      margin-top: 14px;
       padding: 13px;
+      margin-top: 14px;
       border-radius: 10px;
       background: #1e2437;
-      word-break: break-word;
       font-size: 13px;
       line-height: 1.6;
+      word-break: break-word;
     }
 
     .success {
@@ -144,16 +144,11 @@
       color: #ff6678;
     }
 
-    a {
-      color: #b98cff;
-      word-break: break-all;
-    }
-
     .warning {
       padding: 14px;
+      border: 1px solid rgba(255, 179, 71, 0.3);
       border-radius: 11px;
       background: rgba(255, 179, 71, 0.1);
-      border: 1px solid rgba(255, 179, 71, 0.3);
       color: #ffd28b;
       font-size: 13px;
       line-height: 1.5;
@@ -162,12 +157,18 @@
     .hidden {
       display: none !important;
     }
+
+    a {
+      color: #b98cff;
+      word-break: break-all;
+    }
   </style>
 </head>
 
 <body>
   <main class="container">
-    <header class="header">
+
+    <header>
       <div class="logo">S</div>
       <h1>Solana Token Creator</h1>
       <p class="subtitle">
@@ -180,7 +181,7 @@
         Solana Devnet
       </div>
 
-      <h2>1. Connect Phantom</h2>
+      <h2>Connect Wallet</h2>
 
       <button id="connectButton">
         Connect Phantom
@@ -198,13 +199,13 @@
     </section>
 
     <section class="card">
-      <h2>2. Token details</h2>
+      <h2>Token Details</h2>
 
       <label for="tokenName">Token name</label>
       <input
         id="tokenName"
         type="text"
-        maxlength=" 40"
+        maxlength="40"
         placeholder="Example Coin"
       />
 
@@ -229,7 +230,7 @@
       <input
         id="tokenSupply"
         type="text"
-        inputmode="decimal"
+        inputmode="numeric"
         placeholder="1000000"
       />
 
@@ -242,18 +243,18 @@
 
     <section class="card">
       <div class="warning">
-        <strong>Important:</strong><br />
-        This version works on Devnet only. Never enter a seed phrase or
-        private key. Phantom must approve every transaction.
+        <strong>Security warning:</strong><br />
+        Never enter a seed phrase or private key. Phantom must approve every
+        transaction. This version works on Devnet only.
       </div>
     </section>
+
   </main>
 
   <script type="module">
     import {
       Connection,
       Keypair,
-      PublicKey,
       SystemProgram,
       Transaction
     } from "https://esm.sh/@solana/web3.js@1.98.4";
@@ -271,24 +272,45 @@
 
     const DEVNET_RPC = "https://api.devnet.solana.com";
 
-    const connection = new Connection(DEVNET_RPC, "confirmed");
+    const connection = new Connection(
+      DEVNET_RPC,
+      "confirmed"
+    );
 
-    const connectButton = document.getElementById("connectButton");
-    const disconnectButton = document.getElementById("disconnectButton");
-    const createButton = document.getElementById("createButton");
-    const statusElement = document.getElementById("status");
-    const walletBox = document.getElementById("walletBox");
-    const resultBox = document.getElementById("resultBox");
+    const connectButton =
+      document.getElementById("connectButton");
 
-    let provider = null;
-    let walletPublicKey = null;
+    const disconnectButton =
+      document.getElementById("disconnectButton");
 
-    function findPhantom() {
-      if (window.phantom && window.phantom.solana) {
+    const createButton =
+      document.getElementById("createButton");
+
+    const statusElement =
+      document.getElementById("status");
+
+    const walletBox =
+      document.getElementById("walletBox");
+
+    const resultBox =
+      document.getElementById("resultBox");
+
+    let phantomProvider = null;
+    let connectedWallet = null;
+
+    function getPhantomProvider() {
+      if (
+        window.phantom &&
+        window.phantom.solana &&
+        window.phantom.solana.isPhantom
+      ) {
         return window.phantom.solana;
       }
 
-      if (window.solana && window.solana.isPhantom) {
+      if (
+        window.solana &&
+        window.solana.isPhantom
+      ) {
         return window.solana;
       }
 
@@ -308,8 +330,8 @@
       }
     }
 
-    function showResult(message, type = "") {
-      resultBox.innerHTML = message;
+    function showResult(html, type = "") {
+      resultBox.innerHTML = html;
       resultBox.className = "result-box";
       resultBox.style.display = "block";
 
@@ -322,20 +344,47 @@
       }
     }
 
+    function getErrorMessage(error) {
+      if (!error) {
+        return "Unknown error";
+      }
+
+      if (typeof error === "string") {
+        return error;
+      }
+
+      if (error.message) {
+        return error.message;
+      }
+
+      if (error.toString) {
+        return error.toString();
+      }
+
+      return "Unknown error";
+    }
+
     function validateForm() {
-      const name = document.getElementById("tokenName").value.trim();
-      const symbol = document.getElementById("tokenSymbol").value.trim();
-      const decimals = Number(
-        document.getElementById("tokenDecimals").value
-      );
-      const supply = document.getElementById("tokenSupply").value.trim();
+      const name =
+        document.getElementById("tokenName").value.trim();
+
+      const symbol =
+        document.getElementById("tokenSymbol").value.trim();
+
+      const decimalsText =
+        document.getElementById("tokenDecimals").value.trim();
+
+      const supply =
+        document.getElementById("tokenSupply").value.trim();
 
       if (!name) {
         throw new Error("Enter a token name.");
       }
 
       if (name.length > 40) {
-        throw new Error("Token name must be 40 characters or fewer.");
+        throw new Error(
+          "Token name must be 40 characters or fewer."
+        );
       }
 
       if (!symbol) {
@@ -349,45 +398,65 @@
       }
 
       if (symbol.length > 10) {
-        throw new Error("Token symbol must be 10 characters or fewer.");
+        throw new Error(
+          "Token symbol must be 10 characters or fewer."
+        );
       }
 
-      if (!Number.isInteger(decimals) || decimals < 0 || decimals > 9) {
-        throw new Error("Decimals must be a whole number from 0 to 9.");
+      if (!/^[0-9]+$/.test(decimalsText)) {
+        throw new Error(
+          "Decimals must be a whole number from 0 to 9."
+        );
       }
 
-      if (!/^[0-9]+$/.test(supply) || supply === "0") {
+      const decimals = Number(decimalsText);
+
+      if (decimals < 0 || decimals > 9) {
+        throw new Error(
+          "Decimals must be a whole number from 0 to 9."
+        );
+      }
+
+      if (!/^[0-9]+$/.test(supply)) {
         throw new Error(
           "Initial supply must be a positive whole number."
         );
       }
 
+      if (BigInt(supply) <= 0n) {
+        throw new Error(
+          "Initial supply must be greater than zero."
+        );
+      }
+
       return {
-        name,
+        name: name,
         symbol: symbol.toUpperCase(),
-        decimals,
-        supply
+        decimals: decimals,
+        supply: supply
       };
     }
 
     async function connectWallet() {
-      provider = findPhantom();
+      phantomProvider = getPhantomProvider();
 
-      if (!provider) {
+      if (!phantomProvider) {
         setStatus(
-          "Phantom was not detected. Open this website inside Phantom's browser.",
+          "Phantom was not detected. Open this page inside Phantom's in-app browser.",
           "error"
         );
         return;
       }
 
       try {
-        const response = await provider.connect();
+        const response =
+          await phantomProvider.connect();
 
-        walletPublicKey = response.publicKey;
+        connectedWallet = response.publicKey;
 
         walletBox.textContent =
-          "Connected wallet: " + walletPublicKey.toString();
+          "Connected wallet: " +
+          connectedWallet.toString();
 
         walletBox.style.display = "block";
 
@@ -395,10 +464,13 @@
         disconnectButton.classList.remove("hidden");
         createButton.disabled = false;
 
-        setStatus("Wallet connected.", "success");
+        setStatus(
+          "Wallet connected successfully.",
+          "success"
+        );
       } catch (error) {
         setStatus(
-          "Wallet connection was cancelled or failed.",
+          getErrorMessage(error),
           "error"
         );
       }
@@ -406,15 +478,15 @@
 
     async function disconnectWallet() {
       try {
-        if (provider) {
-          await provider.disconnect();
+        if (phantomProvider) {
+          await phantomProvider.disconnect();
         }
       } catch (error) {
-        console.warn(error);
+        console.log("Disconnect error:", error);
       }
 
-      provider = null;
-      walletPublicKey = null;
+      phantomProvider = null;
+      connectedWallet = null;
 
       connectButton.classList.remove("hidden");
       disconnectButton.classList.add("hidden");
@@ -427,47 +499,53 @@
     }
 
     async function createToken() {
-      if (!provider || !walletPublicKey) {
+      if (!phantomProvider || !connectedWallet) {
         throw new Error("Connect Phantom first.");
       }
 
       const details = validateForm();
 
       const mintKeypair = Keypair.generate();
-      const mintPublicKey = mintKeypair.publicKey;
+      const mintAddress = mintKeypair.publicKey;
 
-      const decimals = BigInt(details.decimals);
-      const humanSupply = BigInt(details.supply);
-      const baseUnits = humanSupply * (10n ** decimals);
+      const supplyInBaseUnits =
+        BigInt(details.supply) *
+        (10n ** BigInt(details.decimals));
 
-      if (baseUnits > 18446744073709551615n) {
+      const maximumUint64 =
+        18446744073709551615n;
+
+      if (supplyInBaseUnits > maximumUint64) {
         throw new Error(
-          "Supply is too large for a Solana token."
+          "The supply is too large for a Solana token."
         );
       }
 
       setStatus(
-        "Preparing the token transaction. Please wait..."
+        "Preparing the transaction..."
       );
 
       const rentLamports =
-        await getMinimumBalanceForRentExemptMint(connection);
+        await getMinimumBalanceForRentExemptMint(
+          connection
+        );
 
       const associatedTokenAddress =
         await getAssociatedTokenAddress(
-          mintPublicKey,
-          walletPublicKey,
+          mintAddress,
+          connectedWallet,
           false,
           TOKEN_PROGRAM_ID,
           ASSOCIATED_TOKEN_PROGRAM_ID
         );
 
-      const transaction = new Transaction();
+      const transaction =
+        new Transaction();
 
       transaction.add(
         SystemProgram.createAccount({
-          fromPubkey: walletPublicKey,
-          newAccountPubkey: mintPublicKey,
+          fromPubkey: connectedWallet,
+          newAccountPubkey: mintAddress,
           space: MINT_SIZE,
           lamports: rentLamports,
           programId: TOKEN_PROGRAM_ID
@@ -476,20 +554,20 @@
 
       transaction.add(
         createInitializeMintInstruction(
-          mintPublicKey,
+          mintAddress,
           details.decimals,
-          walletPublicKey,
-          walletPublicKey,
+          connectedWallet,
+          connectedWallet,
           TOKEN_PROGRAM_ID
         )
       );
 
       transaction.add(
         createAssociatedTokenAccountInstruction(
-          walletPublicKey,
+          connectedWallet,
           associatedTokenAddress,
-          walletPublicKey,
-          mintPublicKey,
+          connectedWallet,
+          mintAddress,
           TOKEN_PROGRAM_ID,
           ASSOCIATED_TOKEN_PROGRAM_ID
         )
@@ -497,31 +575,45 @@
 
       transaction.add(
         createMintToInstruction(
-          mintPublicKey,
+          mintAddress,
           associatedTokenAddress,
-          walletPublicKey,
-          baseUnits,
+          connectedWallet,
+          supplyInBaseUnits,
           [],
           TOKEN_PROGRAM_ID
         )
       );
 
       const latestBlockhash =
-        await connection.getLatestBlockhash("confirmed");
+        await connection.getLatestBlockhash(
+          "confirmed"
+        );
 
-      transaction.feePayer = walletPublicKey;
-      transaction.recentBlockhash = latestBlockhash.blockhash;
+      transaction.feePayer = connectedWallet;
+      transaction.recentBlockhash =
+        latestBlockhash.blockhash;
 
       transaction.partialSign(mintKeypair);
 
       setStatus(
-        "Phantom is waiting for your approval..."
+        "Review and approve the transaction in Phantom..."
       );
 
-      const signedTransaction =
-        await provider.signAndSendTransaction(transaction);
+      const result =
+        await phantomProvider.signAndSendTransaction(
+          transaction
+        );
 
-      const signature = signedTransaction.signature;
+      const signature =
+        typeof result === "string"
+          ? result
+          : result.signature;
+
+      if (!signature) {
+        throw new Error(
+          "Phantom did not return a transaction signature."
+        );
+      }
 
       setStatus(
         "Transaction submitted. Waiting for confirmation..."
@@ -529,19 +621,20 @@
 
       await connection.confirmTransaction(
         {
-          signature,
+          signature: signature,
           blockhash: latestBlockhash.blockhash,
-          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+          lastValidBlockHeight:
+            latestBlockhash.lastValidBlockHeight
         },
         "confirmed"
       );
 
-      const explorerUrl =
+      const mintExplorerUrl =
         "https://explorer.solana.com/address/" +
-        mintPublicKey.toString() +
+        mintAddress.toString() +
         "?cluster=devnet";
 
-      const transactionUrl =
+      const transactionExplorerUrl =
         "https://explorer.solana.com/tx/" +
         signature +
         "?cluster=devnet";
@@ -553,11 +646,16 @@
         "Supply: " + details.supply + "<br>" +
         "Decimals: " + details.decimals + "<br><br>" +
         "<strong>Mint address:</strong><br>" +
-        mintPublicKey.toString() + "<br><br>" +
-        "<a href='" + explorerUrl + "' target='_blank'>" +
-        "View token on Solana Explorer</a><br><br>" +
-        "<a href='" + transactionUrl + "' target='_blank'>" +
-        "View transaction</a>"
+        mintAddress.toString() +
+        "<br><br>" +
+        "<a href=\"" +
+        mintExplorerUrl +
+        "\" target=\"_blank\">View token on Explorer</a>" +
+        "<br><br>" +
+        "<a href=\"" +
+        transactionExplorerUrl +
+        "\" target=\"_blank\">View transaction</a>",
+        "success"
       );
 
       setStatus(
@@ -566,66 +664,59 @@
       );
     }
 
-    connectButton.addEventListener("click", connectWallet);
-    disconnectButton.addEventListener("click", disconnectWallet);
+    connectButton.addEventListener(
+      "click",
+      connectWallet
+    );
 
-    createButton.addEventListener("click", async function () {
-      createButton.disabled = true;
-      resultBox.style.display = "none";
+    disconnectButton.addEventListener(
+      "click",
+      disconnectWallet
+    );
 
-      try {
-        await createToken();
-      } catch (error) {
-        console.error(error);
+    createButton.addEventListener(
+      "click",
+      async function () {
+        createButton.disabled = true;
+        resultBox.style.display = "none";
 
-        showResult(
-          error.message || "Token creation failed.",
-          "error"
-        );
+        try {
+          await createToken();
+        } catch (error) {
+          console.error(error);
 
-        setStatus(
-          "Token creation failed. No funds should be spent unless you approved a transaction.",
-          "error"
-        );
-      } finally {
-        createButton.disabled = false;
+          const message =
+            getErrorMessage(error);
+
+          showResult(
+            "<strong>Token creation failed.</strong><br><br>" +
+            message,
+            "error"
+          );
+
+          setStatus(
+            "Token creation failed.",
+            "error"
+          );
+        } finally {
+          createButton.disabled = false;
+        }
       }
-    });
+    );
 
-    window.addEventListener("load", function () {
-      provider = findPhantom();
+    window.addEventListener(
+      "load",
+      function () {
+        phantomProvider =
+          getPhantomProvider();
 
-      if (!provider) {
-        setStatus(
-          "Open this page inside Phantom's in-app browser."
-        );
+        if (!phantomProvider) {
+          setStatus(
+            "Open this website inside Phantom's in-app browser."
+          );
+        }
       }
-    });
+    );
   </script>
 </body>
   </html>
-
-          walletAddressElement.style.display = "block";
-
-          connectButton.classList.add("hidden");
-          disconnectButton.classList.remove("hidden");
-          tokenButton.disabled = false;
-
-          setStatus(
-            "Wallet already connected: " + shortenAddress(address),
-            "success"
-          );
-
-          await updateBalance(connectedPublicKey);
-        }
-      } catch (error) {
-        console.warn("Automatic wallet detection failed:", error);
-      }
-    });
-
-    if (walletProvider) {
-      walletProvider.on("disconnect", disconnectWallet);
-    }
-  </script>
-</body>
-</html>
